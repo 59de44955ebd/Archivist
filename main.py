@@ -502,7 +502,10 @@ class Main(QMainWindow):
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
         else:
-            command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
+            if IS_WIN:
+                command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
+            else:
+                command = f"'{BIN_7ZIP}' l -ba -sccUTF-8 '{archive}' '{path}*'"
 
         output = self._run(command, return_stdout=True)
         if output == False:
