@@ -19,7 +19,7 @@ echo Running pyinstaller...
 echo ****************************************
 
 ::pyinstaller --noupx -w -i "%APP_ICON%" -n "%APP_NAME%" --version-file=version_res.txt --hidden-import mytablewidget -D main.py
-pyinstaller %APP_NAME%.spec
+pyinstaller %APP_NAME%_win.spec
 
 echo.
 echo ****************************************
