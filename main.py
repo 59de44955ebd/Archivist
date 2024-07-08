@@ -387,11 +387,16 @@ class Main(QMainWindow):
 
         is_pkg = ext == 'pkg'
 
+        if is_pkg:
+            command = [BIN_7ZIP, 'e', '-aoa', '-o' + TMP_DIR, archive, 'Payload~']
+            self._run(command, return_stdout=True)
+
         if ext == 'exe':
             # check if 7z sfx (7z can't edit/save ZIP sfx)
             command = [BIN_7ZIP, 't', archive]
             output = self._run(command, return_stdout=True)
             is_editable = 'Type = 7z' in output
+
         else:
             is_editable = (is_compressed_tar and ext in ('bz2', 'gz', 'xz')) or ext in EDITABLE_EXTENSIONS
 
@@ -521,10 +526,6 @@ class Main(QMainWindow):
 #                command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-tcpio', '-ba', '-sccUTF-8', f"{path}*"]
 #            else:
 #                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -tcpio -ba -sccUTF-8 '{path}*'"
-
-            if not path:
-                command = [BIN_7ZIP, 'e', '-o' + TMP_DIR, archive, 'Payload~']
-                self._run(command, return_stdout=True)
 
             command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', os.path.join(TMP_DIR, 'Payload~'), f"{path}*"]
 
