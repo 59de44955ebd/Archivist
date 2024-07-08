@@ -238,7 +238,7 @@ class Main(QMainWindow):
         self._current_path = ''
         self._is_editable = False
         self._is_compressed_tar = False
-        self._is_cpio = False
+        self._is_pkg = False
         self._tmp_tar = None
 
         QResource.registerResource(os.path.join(RES_DIR, 'main.rcc'))
@@ -385,7 +385,7 @@ class Main(QMainWindow):
         archive = os.path.realpath(fn)
         is_compressed_tar = is_compressed_tar or ext in ('tbz', 'tgz', 'tlz', 'txz')
 
-        is_cpio = bn.lower().endswith('.cpio')
+        is_pkg = ext == 'pkg'
 
         if ext == 'exe':
             # check if 7z sfx (7z can't edit/save ZIP sfx)
@@ -395,7 +395,7 @@ class Main(QMainWindow):
         else:
             is_editable = (is_compressed_tar and ext in ('bz2', 'gz', 'xz')) or ext in EDITABLE_EXTENSIONS
 
-        ok = self._load_path(archive, '', is_editable, is_compressed_tar, is_cpio)
+        ok = self._load_path(archive, '', is_editable, is_compressed_tar, is_pkg)
 
         self.tableWidget.setEnabled(ok)
 
@@ -405,7 +405,7 @@ class Main(QMainWindow):
             self._current_path = ''
             self._is_editable = is_editable
             self._is_compressed_tar = is_compressed_tar
-            self._is_cpio = is_cpio
+            self._is_pkg = is_pkg
 
             self.statusbar.showMessage('Archive successfully loaded.')
             self._status_label.setText(f'Archive editable: {"yes" if self._is_editable else "no"}')
@@ -500,25 +500,34 @@ class Main(QMainWindow):
         self._current_path = ''
         self._is_editable = False
         self._is_compressed_tar = False
-        self._is_cpio = False
+        self._is_pkg = False
         self._tmp_tar = None
 
     ########################################
     # for archives that don't store directories explicitely
     # returns list or None
     ########################################
-    def _list_folders_implicit(self, archive, path, is_compressed_tar, is_cpio):
-
+    def _list_folders_implicit(self, archive, path, is_compressed_tar, is_pkg):
         if is_compressed_tar:
             if IS_WIN:
                 command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-ttar', '-ba', '-sccUTF-8', f"{path}*"]
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
-        elif is_cpio:
-            if IS_WIN:
-                command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-tcpio', '-ba', '-sccUTF-8', f"{path}*"]
-            else:
-                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -tcpio -ba -sccUTF-8 '{path}*'"
+
+        elif is_pkg:
+
+            # NOT IMPLEMENTED
+#            if IS_WIN:
+#                command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-tcpio', '-ba', '-sccUTF-8', f"{path}*"]
+#            else:
+#                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -tcpio -ba -sccUTF-8 '{path}*'"
+
+            if not path:
+                command = [BIN_7ZIP, 'e', '-o' + TMP_DIR, archive, 'Payload~']
+                self._run(command, return_stdout=True)
+
+            command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', os.path.join(TMP_DIR, 'Payload~'), f"{path}*"]
+
         else:
             command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
 
@@ -598,7 +607,7 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
-    def _load_path(self, archive=None, path=None, is_editable=None, is_compressed_tar=None, is_cpio=None):
+    def _load_path(self, archive=None, path=None, is_editable=None, is_compressed_tar=None, is_pkg=None):
 
         if archive is None:
             archive = self._current_archive
@@ -610,8 +619,8 @@ class Main(QMainWindow):
         if is_compressed_tar is None:
             is_compressed_tar = self._is_compressed_tar
 
-        if is_cpio is None:
-            is_cpio = self._is_cpio
+        if is_pkg is None:
+            is_pkg = self._is_pkg
 
         if path != '' and not path.endswith(os.sep):
             path += os.sep
@@ -620,7 +629,7 @@ class Main(QMainWindow):
 #            rows = self._list_folders_explicit(path)
 #        else:
 
-        rows = self._list_folders_implicit(archive, path, is_compressed_tar, is_cpio)  # self._current_ext == 'tar' or self._is_compressed_tar
+        rows = self._list_folders_implicit(archive, path, is_compressed_tar, is_pkg)  # self._current_ext == 'tar' or self._is_compressed_tar
 
         if rows is None:
             return False
@@ -757,6 +766,9 @@ class Main(QMainWindow):
                     command = [BIN_7ZIP, 'x', self._current_archive, '-so', '|', BIN_7ZIP, c, '-si', '-ttar', '-aoa', archive_path]
                 else:
                     command = f"'{BIN_7ZIP}' x '{self._current_archive}' -so | '{BIN_7ZIP}' {c} -si -ttar -aoa '{archive_path}'"
+            self._run(command, cwd=local_dir)
+        elif self._is_pkg:
+            command = [BIN_7ZIP, c, '-aoa', '-tcpio', os.path.join(TMP_DIR, 'Payload~'), archive_path]
             self._run(command, cwd=local_dir)
         else:
             command = [BIN_7ZIP, c, '-aoa', self._current_archive, archive_path]
