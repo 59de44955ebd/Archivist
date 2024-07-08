@@ -20,7 +20,7 @@ VSVersionInfo(
         StringStruct(u'InternalName', u'Archivist'),
         StringStruct(u'OriginalFilename', u'Archivist.exe'),
         StringStruct(u'ProductName', u'Archivist'),
-        StringStruct(u'ProductVersion', u'0,3,0,0')])
+        StringStruct(u'ProductVersion', u'0,1,0,0')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]

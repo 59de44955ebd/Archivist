@@ -47,11 +47,34 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QLineEdit" name="lineEditPath">
-      <property name="readOnly">
-       <bool>true</bool>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="leftMargin">
+       <number>2</number>
       </property>
-     </widget>
+      <property name="rightMargin">
+       <number>2</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QLineEdit" name="lineEditPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="MyTableWidget" name="tableWidget">
@@ -146,9 +169,10 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="actionNewArchive"/>
     <addaction name="actionOpenArchive"/>
     <addaction name="separator"/>
-    <addaction name="actionNewArchive"/>
+    <addaction name="actionCompressSingleFile"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -192,11 +216,14 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionCreate"/>
+   <addaction name="separator"/>
    <addaction name="actionAdd"/>
    <addaction name="actionExtract"/>
    <addaction name="actionTest"/>
    <addaction name="actionMove"/>
    <addaction name="actionDelete"/>
+   <addaction name="separator"/>
    <addaction name="actionInfo"/>
   </widget>
   <action name="actionExit">
@@ -225,7 +252,7 @@
   </action>
   <action name="actionNewArchive">
    <property name="text">
-    <string>&amp;New archive</string>
+    <string>&amp;Create archive</string>
    </property>
    <property name="toolTip">
     <string>New archive</string>
@@ -336,7 +363,13 @@
      <normaloff>:/main/icons/about.png</normaloff>:/main/icons/about.png</iconset>
    </property>
    <property name="text">
-    <string>Info</string>
+    <string>About</string>
+   </property>
+   <property name="iconText">
+    <string>About</string>
+   </property>
+   <property name="toolTip">
+    <string>About</string>
    </property>
   </action>
   <action name="actionAlwaysExtract">
@@ -345,6 +378,20 @@
    </property>
    <property name="text">
     <string>&amp;Always extract to archive's folder</string>
+   </property>
+  </action>
+  <action name="actionCreate">
+   <property name="icon">
+    <iconset resource="main.qrc">
+     <normaloff>:/main/icons/create.png</normaloff>:/main/icons/create.png</iconset>
+   </property>
+   <property name="text">
+    <string>Create new archive</string>
+   </property>
+  </action>
+  <action name="actionCompressSingleFile">
+   <property name="text">
+    <string>GZIP/BZIP2/XZ compress file</string>
    </property>
   </action>
  </widget>

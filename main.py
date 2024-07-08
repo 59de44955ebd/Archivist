@@ -54,14 +54,14 @@ if os.path.isdir(TMP_DIR):
     shutil.rmtree(TMP_DIR, ignore_errors=True)
 os.makedirs(TMP_DIR, exist_ok=True)
 
-SUPPORTED_FORMATS = (
-        '7z', 'APM', 'AR', 'ARJ', 'BZIP2', 'CAB', 'CHM', 'COMPOUND', 'CPIO', 'CramFS', 'DMG', 'Ext', 'FAT',
-        'GZIP', 'HFS', 'HXS', 'iHEX', 'ISO', 'LZH', 'LZMA', 'MBR', 'MBR', 'MsLZ', 'Mub', 'NSIS', 'NTFS',
-        'PPMD', 'QCOW2', 'RAR', 'RPM', 'SquashFS', 'TAR', 'UDF', 'UEFIc', 'UEFIs', 'VDI', 'VHD', 'VMDK',
-        'WIM', 'XAR', 'XZ', 'Z', 'ZIP')
+#SUPPORTED_FORMATS = (
+#        '7z', 'APM', 'AR', 'ARJ', 'BZIP2', 'CAB', 'CHM', 'COMPOUND', 'CPIO', 'CramFS', 'DMG', 'Ext', 'FAT',
+#        'GZIP', 'HFS', 'HXS', 'iHEX', 'ISO', 'LZH', 'LZMA', 'MBR', 'MBR', 'MsLZ', 'Mub', 'NSIS', 'NTFS',
+#        'PPMD', 'QCOW2', 'RAR', 'RPM', 'SquashFS', 'TAR', 'UDF', 'UEFIc', 'UEFIs', 'VDI', 'VHD', 'VMDK',
+#        'WIM', 'XAR', 'XZ', 'Z', 'ZIP')
 
 SUPPORTED_EXTENSIONS = (
-        '7z', 'a', 'apk', 'apm', 'ar', 'arj', 'bz2', 'bzip2', 'cab', 'chi', 'chm', 'chq', 'chw', 'cpio', 'cramfs',
+        '7z', 'a', 'apk', 'apm', 'ar', 'arj', 'bz2', 'bzip2', 'cab', 'chi', 'chm', 'chq', 'chw', 'cdr', 'cpio', 'cramfs',
         'deb', 'dmg', 'doc', 'docx', 'epub', 'esd', 'exe', 'ext', 'ext2', 'ext3', 'ext4', 'fat', 'gz', 'gzip',
         'hfs', 'hfsx', 'hxi', 'hxq', 'hxr', 'hxs', 'hxw', 'ihex', 'img', 'iso',
         'jar', 'lha', 'lib', 'lit', 'lzh', 'lzma', 'mbr', 'msi', 'mslz', 'msp', 'mub', 'nsis',
@@ -71,8 +71,12 @@ SUPPORTED_EXTENSIONS = (
 
 FILTER_SUPPORTED = 'Supported Files (*.' + ' *.'.join(SUPPORTED_EXTENSIONS) + ');;All Files (*)'
 
-EDITABLE_EXTENSIONS = ('7z', 'bz2', 'bzip2', 'tbz2', 'tbz', 'gz', 'gzip', 'tgz', 'tar', 'xz',
+#EDITABLE_EXTENSIONS = ('7z', 'bz2', 'bzip2', 'tbz2', 'tbz', 'gz', 'gzip', 'tgz', 'tar', 'xz',
+#        'txz', 'zip', 'zipx', 'jar', 'xpi', 'odt', 'ods', 'docx', 'xlsx', 'epub')
+
+EDITABLE_EXTENSIONS = ('7z', 'exe', 'tar', 'tbz2', 'tbz', 'tgz',
         'txz', 'zip', 'zipx', 'jar', 'xpi', 'odt', 'ods', 'docx', 'xlsx', 'epub')
+
 # tar.bz2 tar.gz tar.lzma tar.xz
 
 #7z 	X 	7z
@@ -83,20 +87,28 @@ EDITABLE_EXTENSIONS = ('7z', 'bz2', 'bzip2', 'tbz2', 'tbz', 'gz', 'gzip', 'tgz',
 #XZ 	X 	xz txz
 #ZIP 	X 	zip zipx jar xpi odt ods docx xlsx epub
 
-CREATABLE_EXTENSIONS = ('7z', 'zip', 'tar', 'tgz', 'tbz', 'txz')
+CREATABLE_EXTENSIONS = ['7z']  + (['exe'] if IS_WIN else []) + ['zip', 'tar', 'tgz', 'tbz', 'txz']  # single file only: gzip bzip2 xz
 
 #FILTER_CREATABLE = ';;'.join([f.upper() + ' archive (*.' + f + ')' for f in CREATABLE_EXTENSIONS])
 
-FILTER_CREATABLE = ';;'.join((
-    '7-Zip archive (*.7z)',
+FILTER_CREATABLE = ';;'.join([
+    '7-Zip archive (*.7z)'] + (['7-Zip SFX (.exe)'] if IS_WIN else []) + [
     'ZIP archive (*.zip)',
     'TAR archive (*.tar)',
     'TGZ archive (*.tgz *.tar.gz)',
     'TBZ archive (*.tbz *.tar.bz2)',
-    'TXZ archive (*.txz *.tar.xz)',
+    'TXZ archive (*.txz *.tar.xz)'
+])
+
+#if IS_WIN:
+
+FILTER_CCOMPRESS_SINGLE = ';;'.join((
+    'GZIP file (*.gz)',
+    'BZIP2 file (*.bz2)',
+    'XZ file (*.xz)'
 ))
 
-COMPRESSION_ONLY_EXTENSIONS = ('bz2', 'bzip2', 'gz', 'gzip', 'xz', 'z', 'hxq', 'lzma')
+COMPRESSION_ONLY_EXTENSIONS = ('bz2', 'bzip2', 'gz', 'gzip', 'xz',    'z', 'lzma')
 # BUT: tar.lzma (tlz)
 
 COL_NAME = 0
@@ -202,9 +214,9 @@ class MyFileSizeItem(QTableWidgetItem):
 
     def __lt__(self, other_item):
         if self.is_frozen:
-            return not sort_descending  #False if sort_descending else True
+            return not sort_descending
         elif other_item.is_frozen:
-            return sort_descending  #True if sort_descending else False
+            return sort_descending
         return self.data(Qt.UserRole) < other_item.data(Qt.UserRole)
 
 
@@ -228,11 +240,6 @@ class Main(QMainWindow):
         self._is_compressed_tar = False
         self._tmp_tar = None
 
-#        self._eliminate_root_folder = self._settings.value('EliminateDuplication', False) == 'true'
-#        self._extract_to_archive_folder = self._settings.value('AlwaysExtract', False) == 'true'
-#        self._confirm_add = self._settings.value('ConfirmAdd', True) == 'true'
-#        self._confirm_delete = self._settings.value('ConfirmDelete', True) == 'true'
-
         QResource.registerResource(os.path.join(RES_DIR, 'main.rcc'))
         uic.loadUi(os.path.join(RES_DIR, 'main.ui'), self)
 
@@ -240,28 +247,30 @@ class Main(QMainWindow):
             app.fileOpened.connect(self._load_archive)
 
         # menu
+        self.actionNewArchive.triggered.connect(self.slot_create_archive)
+        self.actionCompressSingleFile.triggered.connect(self.slot_compress_single)
         self.actionOpenArchive.triggered.connect(self.slot_load_archive)
-        self.actionNewArchive.triggered.connect(self.slot_new_archive)
 
-        self.actionEliminateDuplication.setChecked(self._settings.value('EliminateDuplication', False) == 'true')
+        self.actionEliminateDuplication.setChecked(self._settings.value('EliminateDuplication', False, type=bool))
         self.actionEliminateDuplication.toggled.connect(lambda flag:
                 self._settings.setValue('EliminateDuplication', flag))
 
-        self.actionAlwaysExtract.setChecked(self._settings.value('AlwaysExtract', False) == 'true')
+        self.actionAlwaysExtract.setChecked(self._settings.value('AlwaysExtract', False, type=bool))
         self.actionAlwaysExtract.toggled.connect(lambda flag:
                 self._settings.setValue('AlwaysExtract', flag))
 
-        self.actionConfirmAdd.setChecked(self._settings.value('ConfirmAdd', True) == 'true')
+        self.actionConfirmAdd.setChecked(self._settings.value('ConfirmAdd', True, type=bool))
         self.actionConfirmAdd.toggled.connect(lambda flag:
                 self._settings.setValue('ConfirmAdd', flag))
 
-        self.actionConfirmDelete.setChecked(self._settings.value('ConfirmDelete', True) == 'true')
+        self.actionConfirmDelete.setChecked(self._settings.value('ConfirmDelete', True, type=bool))
         self.actionConfirmDelete.toggled.connect(lambda flag:
                 self._settings.setValue('ConfirmDelete', flag))
 
         self.actionAbout.triggered.connect(self.slot_about)
 
         # toolbar
+        self.actionCreate.triggered.connect(self.slot_create_archive)
         self.actionAdd.triggered.connect(self.slot_add)
         self.actionExtract.triggered.connect(self.slot_extract)
         self.actionTest.triggered.connect(self.slot_test)
@@ -342,8 +351,9 @@ class Main(QMainWindow):
 
         self._watcher = QFileSystemWatcher(self)
         self._watcher.fileChanged.connect(self.slot_edited_file_changed)
-        self._watch_dir = uuid.uuid4().hex
-        os.makedirs(os.path.join(TMP_DIR, self._watch_dir), exist_ok=True)
+        self._watch_dir = os.path.join(TMP_DIR, uuid.uuid4().hex)
+
+        os.makedirs(self._watch_dir, exist_ok=True)
         self._edit_dict = {}
 
         self.show()
@@ -364,9 +374,9 @@ class Main(QMainWindow):
             return
 
         is_compressed_tar = bn.lower().endswith('.tar')
-        if ext in COMPRESSION_ONLY_EXTENSIONS and not is_compressed_tar:
-            # show message
-            return
+#        if ext in COMPRESSION_ONLY_EXTENSIONS and not is_compressed_tar:
+#            # show message
+#            return
 
         if self._current_archive:
             self._unload_archive()
@@ -376,10 +386,7 @@ class Main(QMainWindow):
 
         if ext == 'exe':
             # check if 7z sfx (7z can't edit/save ZIP sfx)
-            if IS_WIN:
-                command = [BIN_7ZIP, 't', archive]
-            else:
-                command = f"'{BIN_7ZIP}' t '{archive}'"
+            command = [BIN_7ZIP, 't', archive]
             output = self._run(command, return_stdout=True)
             is_editable = 'Type = 7z' in output
         else:
@@ -428,10 +435,10 @@ class Main(QMainWindow):
             self._run(command)
         else:
             if IS_WIN:
-                command = [BIN_7ZIP, 'a', fn, f"-xr!*"]
+                command = [BIN_7ZIP, 'a', '-sfx7z.sfx' if IS_WIN else '', fn, f"-xr!*"]
             else:
                 command = f"'{BIN_7ZIP}' a '{fn}' -x'!*'"
-            self._run(command)
+            self._run(command, cwd=os.path.join(APP_DIR, 'resources', 'bin', 'win'))
 
         self._current_archive = os.path.realpath(fn)
         self._current_ext = ext
@@ -498,14 +505,11 @@ class Main(QMainWindow):
 
         if is_compressed_tar:
             if IS_WIN:
-                command = f'"{BIN_7ZIP}" x "{archive}" -so | "{BIN_7ZIP}" l -si -ttar -ba -sccUTF-8 "{path}*"'
+                command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-ttar', '-ba', '-sccUTF-8', f"{path}*"]
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
         else:
-            if IS_WIN:
-                command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
-            else:
-                command = f"'{BIN_7ZIP}' l -ba -sccUTF-8 '{archive}' '{path}*'"
+            command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
 
         output = self._run(command, return_stdout=True)
         if output == False:
@@ -543,42 +547,42 @@ class Main(QMainWindow):
     # for archives that store directories explicitely
     # returns list or None
     ########################################
-    def _list_folders_explicit(self, archive, path, is_compressed_tar):
-        rows = []
-
-        if is_compressed_tar:
-            if IS_WIN:
-                command = f'"{BIN_7ZIP}" x "{archive}" -so | "{BIN_7ZIP}" l -ba -si -ttar -sccUTF-8 "{path}*" "-x!{path}*{os.sep}*'
-            else:
-                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -ba -si -ttar -sccUTF-8 '{path}*' -x'!{path}*{os.sep}*'"
-        else:
-            if IS_WIN:
-                command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*", f"-x!{path}*{os.sep}*"]
-            else:
-                command = f"'{BIN_7ZIP}' l -ba -sccUTF-8 '{archive}' '{path}*' -x'!{path}*{os.sep}*'"
-
-        output = self._run(command, return_stdout=True)
-        if output == False:
-            return
-        output = output[:-len(EOL)]
-#        print(output)
-        if not output:
-            return rows
-
-        for line in output.split(EOL):
-            date_time = line[:19]
-            attr = line[20:25].replace('.', '')
-            size = int(line[26:38].strip() or 0)
-            filename = line[53:].split(os.sep).pop()
-
-            rows.append([
-                filename,
-                size,
-                date_time,
-                attr,
-            ])
-
-        return rows
+#    def _list_folders_explicit(self, archive, path, is_compressed_tar):
+#        rows = []
+#
+#        if is_compressed_tar:
+#            if IS_WIN:
+#                command = f'"{BIN_7ZIP}" x "{archive}" -so | "{BIN_7ZIP}" l -ba -si -ttar -sccUTF-8 "{path}*" "-x!{path}*{os.sep}*'
+#            else:
+#                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -ba -si -ttar -sccUTF-8 '{path}*' -x'!{path}*{os.sep}*'"
+#        else:
+#            if IS_WIN:
+#                command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*", f"-x!{path}*{os.sep}*"]
+#            else:
+#                command = f"'{BIN_7ZIP}' l -ba -sccUTF-8 '{archive}' '{path}*' -x'!{path}*{os.sep}*'"
+#
+#        output = self._run(command, return_stdout=True)
+#        if output == False:
+#            return
+#        output = output[:-len(EOL)]
+##        print(output)
+#        if not output:
+#            return rows
+#
+#        for line in output.split(EOL):
+#            date_time = line[:19]
+#            attr = line[20:25].replace('.', '')
+#            size = int(line[26:38].strip() or 0)
+#            filename = line[53:].split(os.sep).pop()
+#
+#            rows.append([
+#                filename,
+#                size,
+#                date_time,
+#                attr,
+#            ])
+#
+#        return rows
 
     ########################################
     #
@@ -713,18 +717,15 @@ class Main(QMainWindow):
     def _extract_archive(self, local_dir):
         if self._is_compressed_tar:
             if self._tmp_tar:
-                if IS_WIN:
-                    command = f'"{BIN_7ZIP}" x "{self._tmp_tar}" -aoa'
-                else:
-                    command = f"'{BIN_7ZIP}' x '{self._tmp_tar}' -aoa"
+                command = [BIN_7ZIP, 'x', self._tmp_tar, '-aoa']
             else:
                 if IS_WIN:
-                    command = f'"{BIN_7ZIP}" x "{self._current_archive}" -so | "{BIN_7ZIP}" x -si -ttar -aoa'
+                    command = [BIN_7ZIP, 'x', self._current_archive, '-so', '|', BIN_7ZIP, 'x', '-si', '-ttar', '-aoa']
                 else:
                     command = f"'{BIN_7ZIP}' x '{self._current_archive}' -so | '{BIN_7ZIP}' x -si -ttar -aoa"
             self._run(command, cwd=local_dir)
         else:
-            command = [BIN_7ZIP, 'x', '-aoa', '-spe' if self._settings.value('EliminateDuplication', False) == 'true' else '', self._current_archive]
+            command = [BIN_7ZIP, 'x', '-aoa', '-spe' if self._settings.value('EliminateDuplication', False, type=bool) else '', self._current_archive]
             self._run(command, cwd=local_dir)
 
     ########################################
@@ -735,14 +736,10 @@ class Main(QMainWindow):
         c = 'x' if is_dir else 'e'
         if self._is_compressed_tar:
             if self._tmp_tar:
-                if IS_WIN:
-                    command = f'"{BIN_7ZIP}" {c} "{self._tmp_tar}" -aoa "{archive_path}"'
-                else:
-                    command = f"'{BIN_7ZIP}' {c} '{self._tmp_tar}' -aoa '{archive_path}'"
+                command = [BIN_7ZIP, c, self._tmp_tar, '-aoa', archive_path]
             else:
                 if IS_WIN:
-                    # 7z x "D:\TMP\aaa.tar.gz" -so | 7z x -si -ttar aaa.txt
-                    command = f'"{BIN_7ZIP}" x "{self._current_archive}" -so | "{BIN_7ZIP}" {c} -si -ttar -aoa "{archive_path}"'
+                    command = [BIN_7ZIP, 'x', self._current_archive, '-so', '|', BIN_7ZIP, c, '-si', '-ttar', '-aoa', archive_path]
                 else:
                     command = f"'{BIN_7ZIP}' x '{self._current_archive}' -so | '{BIN_7ZIP}' {c} -si -ttar -aoa '{archive_path}'"
             self._run(command, cwd=local_dir)
@@ -757,7 +754,7 @@ class Main(QMainWindow):
         selected_items = [item for item in self.tableWidget.selectedItems() if item.column() == 0 and not item.is_frozen]
         if not selected_items:
             return
-        if self._settings.value('ConfirmDelete', True) == 'true':
+        if self._settings.value('ConfirmDelete', True, type=bool):
             if len(selected_items) > 1:
                 title = 'Confirm Multiple File Delete'
                 text = f'Are you sure you want to delete these {len(selected_items)} items?'
@@ -785,7 +782,7 @@ class Main(QMainWindow):
     def _add_items(self, files_folders):
         if not self._is_editable:
             return
-        if self._settings.value('ConfirmAdd', True) == 'true':
+        if self._settings.value('ConfirmAdd', True, type=bool):
             res = QMessageBox.question(self,
                     'Confirm File Copy',
                     f'Copy to:\n{self.lineEditPath.text()}\nAre you sure you want to copy files to archive?',
@@ -793,27 +790,32 @@ class Main(QMainWindow):
             if res != QMessageBox.Ok:
                 return
 
-        tmp_paths = []
-#        del_items = []
-        rename_items = []
+        tmp_paths = []  # paths relative to TMP_DIR
+
+#        print('CP', self._current_path)
+
+        if self._current_path:
+            tmp_dir = os.path.join(TMP_DIR, self._current_path)
+            os.makedirs(tmp_dir, exist_ok=True)
+            cp = self._current_path + os.sep
+        else:
+            tmp_dir = TMP_DIR
+            cp = ''
 
         for fn_src in files_folders:
             bn_src = os.path.basename(fn_src)
-
-            # copy to tmp with random name
-            bn_tmp = uuid.uuid4().hex
-            fn_tmp = os.path.join(TMP_DIR, bn_tmp)
+            fn_tmp = os.path.join(tmp_dir, bn_src)
 
             if os.path.isdir(fn_src):
                 shutil.copytree(fn_src, fn_tmp)
+
             elif os.path.isfile(fn_src):
                 shutil.copyfile(fn_src, fn_tmp)
+
             else:
                 continue
 
-            tmp_paths.append(fn_tmp)
-#            del_items.append(self._current_path + bn_src)
-            rename_items += [bn_tmp, self._current_path + os.sep + bn_src]
+            tmp_paths.append(cp + bn_src)
 
         if not tmp_paths:
             return
@@ -838,12 +840,8 @@ class Main(QMainWindow):
                 self._tmp_tar = tmp_tar
 
             # add to tar
-            command = [BIN_7ZIP, 'a', self._tmp_tar] + tmp_paths
-            self._run(command)
-
-            # then rename
-            command = [BIN_7ZIP, 'rn', self._tmp_tar] + rename_items
-            self._run(command)
+            command = [BIN_7ZIP, 'a', '-up1q0r2y2', self._tmp_tar] + tmp_paths
+            self._run(command, cwd=TMP_DIR)
 
             # compress tar with same filename/format
             os.rename(self._current_archive, self._current_archive + '.__bak__')
@@ -852,14 +850,9 @@ class Main(QMainWindow):
             os.unlink(self._current_archive + '.__bak__')
 
         else:
-            # add to archive
-            command = [BIN_7ZIP, 'a', self._current_archive] + tmp_paths
-            self._run(command)
-
-            # then rename
-            # p2q0r2x2y2z2w2
-            command = [BIN_7ZIP, 'rn', '-up1q0r2y2', self._current_archive] + rename_items
-            self._run(command)
+#            # add to archive
+            command = [BIN_7ZIP, 'a', '-up1q0r2y2', self._current_archive] + tmp_paths
+            self._run(command, cwd=TMP_DIR)
 
         self._clear_tmp_dir()
         self._load_path()
@@ -898,16 +891,18 @@ class Main(QMainWindow):
     #
     ########################################
     def _edit_item(self, item):
-        archive_path = item.data(Qt.UserRole)
+        archive_path = item.data(Qt.UserRole)  # path inside archive
 
         if archive_path not in self._edit_dict.values():
-            watch_tmp_dir = os.path.join(TMP_DIR, self._watch_dir, uuid.uuid4().hex)
-            os.makedirs(watch_tmp_dir, exist_ok=True)
+            if self._current_path:
+                watch_tmp_dir = os.path.join(self._watch_dir, self._current_path)
+                os.makedirs(watch_tmp_dir, exist_ok=True)
+            else:
+                watch_tmp_dir = self._watch_dir
 
             self._save_path(archive_path, watch_tmp_dir, False)
 
             fn = os.path.join(watch_tmp_dir, os.path.basename(archive_path))
-
             self._edit_dict[fn] = archive_path
             self._watcher.addPath(fn)
         else:
@@ -959,21 +954,30 @@ class Main(QMainWindow):
     #
     ########################################
     def _run(self, command, cwd=None, return_stdout=False):
+
+        if IS_MAC and type(command) == str:
+            command = ['/bin/bash', '-c'] + [command]
+
         try:
             if return_stdout:
                 # This is equivalent to:
                 # return run(..., check=True, stdout=PIPE).stdout
-                return subprocess.check_output(command, cwd=cwd, shell=True).decode()
+                return subprocess.check_output(
+                        command,
+                        cwd=cwd,
+                        shell=IS_WIN
+                        ).decode()
             else:
                 subprocess.run(command,
-                    stdout=subprocess.DEVNULL,
-    #                stderr=subprocess.DEVNULL,
-    #                stdin=subprocess.DEVNULL,
+#                    stdout=subprocess.DEVNULL,
+#                    stderr=subprocess.DEVNULL,
+#                    stdin=subprocess.DEVNULL,
                     cwd=cwd,
-                    shell=True
+                    shell=IS_WIN
                     )
                 return True
         except Exception as e:
+            print(e)
             self.statusbar.showMessage(f'Error: {e}')
             return False
 
@@ -1028,10 +1032,10 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_extract(self):
-        if self._settings.value('AlwaysExtract', False) == 'true':
+        if self._settings.value('AlwaysExtract', False, type=bool):
             target_dir = os.path.dirname(self._current_archive)
         else:
-            target_dir = QFileDialog.getExistingDirectory(self, 'Select Destination', os.path.dirname(self._current_archive))
+            target_dir = QFileDialog.getExistingDirectory(self, 'Select destination', os.path.dirname(self._current_archive))
             if not target_dir:
                 return
         selected_items = [item for item in self.tableWidget.selectedItems() if item.column() == 0 and not item.is_frozen]
@@ -1045,10 +1049,7 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_test(self):
-        if IS_WIN:
-            command = [BIN_7ZIP, 't', self._current_archive]
-        else:
-            command = f"'{BIN_7ZIP}' t '{self._current_archive}'"
+        command = [BIN_7ZIP, 't', self._current_archive]
         output = self._run(command, return_stdout=True)
         QMessageBox.information(self, APP_NAME, output)
 
@@ -1067,10 +1068,8 @@ class Main(QMainWindow):
             # revert
             item.setText(old_name)
             return
-        if IS_WIN:
-            command = [BIN_7ZIP, 'rn', self._current_archive, self._current_path + old_name, self._current_path + new_name]
-        else:
-            command = f"'{BIN_7ZIP}' a '{self._current_archive}' '{rel_dir}'"
+
+        command = [BIN_7ZIP, 'rn', self._current_archive, self._current_path + old_name, self._current_path + new_name]
         self._run(command, cwd=TMP_DIR)
         self._load_path()
 
@@ -1141,7 +1140,7 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_load_archive(self):
-        fn, _ = QFileDialog.getOpenFileName(self, 'Archive File', '', FILTER_SUPPORTED)
+        fn, _ = QFileDialog.getOpenFileName(self, 'Open archive', '', FILTER_SUPPORTED)
         if not fn:
             return
         self._load_archive(fn)
@@ -1149,8 +1148,8 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
-    def slot_new_archive(self):
-        fn, _ = QFileDialog.getSaveFileName(self, 'New Archive', '', FILTER_CREATABLE)
+    def slot_create_archive(self):
+        fn, _ = QFileDialog.getSaveFileName(self, 'Create new archive', '', FILTER_CREATABLE)
         if not fn:
             return
         ext = os.path.splitext(fn)[1][1:].lower()
@@ -1160,21 +1159,43 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
+    def slot_compress_single(self):
+        fn, _ = QFileDialog.getOpenFileName(self, 'Select file to compress')
+        if not fn:
+            return
+
+        fn_compressed, _ = QFileDialog.getSaveFileName(self, 'Save compressed file as', fn + '.gz', FILTER_CCOMPRESS_SINGLE)
+        if not fn_compressed:
+            return
+
+        command = [BIN_7ZIP, 'a', fn_compressed, fn]
+        ok = self._run(command)
+
+        if ok:
+            self.statusbar.showMessage('File successfully compressed.')
+        else:
+            self.statusbar.showMessage('Error: failed to compress file.')
+
+    ########################################
+    #
+    ########################################
     def slot_about (self):
         seven_zip_ver = self._run(BIN_7ZIP, return_stdout=True).strip().split(EOL)[0]
-        # SUPPORTED_FORMATS
+        creatable = " ".join(CREATABLE_EXTENSIONS).replace('tgz', 'tgz/tar.gz').replace('tbz', 'tgz/tar.bz2').replace('txz', 'tgz/tar.xz') + ' gz bz2 xz'
         msg = f'''<b>{APP_NAME} v{APP_VERSION}</b><br><br>
         A simple <a href='https://www.7-zip.org/'>7-zip</a> GUI for macOS and Windows, based on <a href='https://doc.qt.io/qt-5/'>Qt 5</a> and <a href='https://www.python.org/'>Python 3</a><br><br>
-        Currently used 7-zip cli version:<br>
+        <u>Currently used 7-zip cli version:</u><br>
         {seven_zip_ver}<br><br>
-        Supported file types:<br>
-        {", ".join(SUPPORTED_EXTENSIONS)}.<br><br>
-        Editable file types:<br>
-        {", ".join(EDITABLE_EXTENSIONS)}.<br><br>
-        App on GitHub: <a href='https://github.com/59de44955ebd/{APP_NAME}'>{APP_NAME}</a><br>
-        License for app\'s Python code: MIT
+        <u>Filetypes {APP_NAME} can open and extract:</u><br>
+        {" ".join(SUPPORTED_EXTENSIONS)}<br><br>
+        <u>Filetypes {APP_NAME} can also edit:</u><br>
+        {" ".join(EDITABLE_EXTENSIONS)}<br><br>
+        <u>Filetypes {APP_NAME} can also create:</u><br>
+        {creatable}<br><br>
+        {APP_NAME} on <a href='https://github.com/59de44955ebd/{APP_NAME}'>GitHub</a>
         '''
         QMessageBox.about(self, 'About', msg)
+        #<br>License for app\'s Python code: MIT
 
     ########################################
     #
@@ -1188,14 +1209,14 @@ class Main(QMainWindow):
     def slot_context_menu_requested(self, pos):
         item = self.tableWidget.currentItem()
         is_selected = item is not None and self.tableWidget.item(item.row(), 0).text() != '..'
-        is_folder = self.tableWidget.item(item.row(), 0).data(Qt.UserRole + 1)
+        is_folder = item is not None and self.tableWidget.item(item.row(), 0).data(Qt.UserRole + 1)
 
         self.action_extract.setEnabled(is_selected)
 
         self.action_open.setEnabled(is_selected)
 #        self.action_view.setEnabled(is_selected and not is_folder)
-        self.action_edit.setEnabled(is_selected and not is_folder)
 
+        self.action_edit.setEnabled(is_selected and self._is_editable and not is_folder)
         self.action_rename.setEnabled(is_selected and self._is_editable)
         self.action_move.setEnabled(is_selected and self._is_editable)
         self.action_delete.setEnabled(is_selected and self._is_editable)
@@ -1245,11 +1266,6 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_edited_file_changed(self, filename):
-#        print('TMPFILE', filename)  # C:\Users\fluxus\AppData\Local\Temp\Archivist\4ea58ef284834f8c8544f5d3e0171491\README.md
-#        print('FILE IN ARCH', self._edit_dict[filename])  # README.md
-
-#TMPFILE C:\Users\fluxus\AppData\Local\Temp\Archivist\dc0fa7de198b44b28b493a9027de2a7b\88450a779e534b1c8a9f5580ff744de2\version_res.txt
-#FILE IN ARCH _test_files\version_res.txt
 
         if not os.path.isfile(filename):
             print('file deleted', filename)
@@ -1257,16 +1273,8 @@ class Main(QMainWindow):
             del self._edit_dict[filename]
             return
 
-        watch_dir = os.path.join(TMP_DIR, self._watch_dir)
-        file_to_add = filename[len(watch_dir) + 1:]  # 88450a779e534b1c8a9f5580ff744de2\version_res.txt
-
-        # add to archive, including random dir
-        command = [BIN_7ZIP, 'a', self._current_archive, file_to_add]
-        self._run(command, cwd=watch_dir)
-
-        command = [BIN_7ZIP, 'rn', '-up1q0r2y2', self._current_archive, file_to_add, self._edit_dict[filename]]
-#        print(command)
-        self._run(command)
+        command = [BIN_7ZIP, 'a', '-up1q0r2y2', self._current_archive, self._edit_dict[filename]]
+        self._run(command, cwd=self._watch_dir)
 
         self._load_path()
 
@@ -1297,15 +1305,12 @@ class Main(QMainWindow):
         if item.is_frozen:
             return
 
-        old_name = self._current_path + item.text()
+        old_name = item.data(Qt.UserRole)
         new_name, ok = QInputDialog.getText(self, 'New Name', 'Enter Name:', QLineEdit.Normal, old_name)
         if not new_name or new_name == old_name:
             return
-        if IS_WIN:
-            command = [BIN_7ZIP, 'rn', self._current_archive, old_name, new_name]
-        else:
-            command = f"'{BIN_7ZIP}' a '{self._current_archive}' '{rel_dir}'"
 
+        command = [BIN_7ZIP, 'rn', self._current_archive, old_name, new_name]
         self._run(command, cwd=TMP_DIR)
         self._load_path()
 
@@ -1327,11 +1332,10 @@ class Main(QMainWindow):
         rel_dir = self._current_path + folder_name
         abs_dir = os.path.join(TMP_DIR, rel_dir)
         os.makedirs(abs_dir, exist_ok=True)
-        if IS_WIN:
-            command = [BIN_7ZIP, 'a', self._current_archive, rel_dir]
-        else:
-            command = f"'{BIN_7ZIP}' a '{self._current_archive}' '{rel_dir}'"
+
+        command = [BIN_7ZIP, 'a', self._current_archive, rel_dir]
         self._run(command, cwd=TMP_DIR)
+
         self._load_path()
         self._clear_tmp_dir()
 
