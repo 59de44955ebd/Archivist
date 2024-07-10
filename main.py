@@ -282,6 +282,12 @@ class Main(QMainWindow):
         self._status_label = QLabel(self)
         self.statusbar.addPermanentWidget(self._status_label)
 
+        if IS_MAC:
+            self.tableWidget.setStyleSheet('font-size:12px;')
+            verticalHeader = self.tableWidget.verticalHeader()
+            verticalHeader.setSectionResizeMode(QHeaderView.Fixed)
+            verticalHeader.setDefaultSectionSize(22)
+
         self.tableWidget.setColumnWidth(1, 80)
         self.tableWidget.setColumnWidth(2, 160)
         self.tableWidget.setColumnWidth(3, 60)
@@ -295,6 +301,9 @@ class Main(QMainWindow):
         self.tableWidget.sortItems(0, Qt.AscendingOrder)
 
         self.tableWidget.customContextMenuRequested.connect(self.slot_context_menu_requested)
+
+        self.comboBoxPath.activated.connect(lambda idx:
+                self._load_path(path=os.sep.join(self.comboBoxPath.itemText(idx)[:-1].split(os.sep)[1:])))
 
         self._context_menu = QMenu(self)
 
@@ -400,6 +409,7 @@ class Main(QMainWindow):
         else:
             is_editable = (is_compressed_tar and ext in ('bz2', 'gz', 'xz')) or ext in EDITABLE_EXTENSIONS
 
+        self.comboBoxPath.clear()
         ok = self._load_path(archive, '', is_editable, is_compressed_tar, is_pkg)
 
         self.tableWidget.setEnabled(ok)
@@ -497,7 +507,7 @@ class Main(QMainWindow):
 #        self.tableWidget.clearContents()
         self.tableWidget.setRowCount(0)
 
-        self.lineEditPath.setText('')
+        self.comboBoxPath.clear()
         self._status_label.setText('')
 
         self._current_archive = None
@@ -645,11 +655,20 @@ class Main(QMainWindow):
 
 #        rows = sorted(rows, key = lambda i: i[COL_NAME].lower())
 
+
+        txt = os.path.join(os.path.basename(archive), path) if path else os.path.basename(archive) + os.sep
+        idx = self.comboBoxPath.findText(txt)
+        if idx > -1:
+            self.comboBoxPath.setCurrentIndex(idx)
+        else:
+            self.comboBoxPath.addItem(txt)
+            self.comboBoxPath.setCurrentIndex(self.comboBoxPath.count() - 1)
+
+
         if path != '':
-            self.lineEditPath.setText(os.path.join(os.path.basename(archive), path))
             self.tableWidget.setRowCount(len(rows) + 1)
 
-            flags = Qt.ItemIsEnabled  # | Qt.ItemIsSelectable
+            flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
             item = MyFileNameItem(True)
             item.setText('..')
@@ -676,7 +695,6 @@ class Main(QMainWindow):
 
             i = 1
         else:
-            self.lineEditPath.setText(os.path.basename(archive) + os.sep)
             self.tableWidget.setRowCount(len(rows))
             i = 0
 
@@ -710,20 +728,20 @@ class Main(QMainWindow):
             else:
                 item.setText(format_filesize(row[COL_SIZE]))
                 item.setData(Qt.UserRole, row[COL_SIZE])
-            item.setFlags(Qt.ItemIsEnabled)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.tableWidget.setItem(i, 1, item)
 
             # last modified
             item = MyFreezableItem()
             item.setText(row[COL_DATE])
-            item.setFlags(Qt.ItemIsEnabled)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.tableWidget.setItem(i, 2, item)
 
             # attr
             item = MyFreezableItem()
             item.setText(row[COL_ATTR])
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            item.setFlags(Qt.ItemIsEnabled)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.tableWidget.setItem(i, 3, item)
 
             i += 1
@@ -813,14 +831,12 @@ class Main(QMainWindow):
         if self._settings.value('ConfirmAdd', True, type=bool):
             res = QMessageBox.question(self,
                     'Confirm File Copy',
-                    f'Copy to:\n{self.lineEditPath.text()}\nAre you sure you want to copy files to archive?',
+                    f'Copy to:\n{self.comboBoxPath.currentText()}\nAre you sure you want to copy files to archive?',
                     QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
             if res != QMessageBox.Ok:
                 return
 
         tmp_paths = []  # paths relative to TMP_DIR
-
-#        print('CP', self._current_path)
 
         if self._current_path:
             tmp_dir = os.path.join(TMP_DIR, self._current_path)
@@ -996,12 +1012,13 @@ class Main(QMainWindow):
                         shell=IS_WIN
                         ).decode()
             else:
-                subprocess.run(command,
-#                    stdout=subprocess.DEVNULL,
-#                    stderr=subprocess.DEVNULL,
-#                    stdin=subprocess.DEVNULL,
-                    cwd=cwd,
-                    shell=IS_WIN
+                subprocess.run(
+                        command,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+    #                    stdin=subprocess.DEVNULL,
+                        cwd=cwd,
+                        shell=IS_WIN
                     )
                 return True
         except Exception as e:
@@ -1097,7 +1114,9 @@ class Main(QMainWindow):
             item.setText(old_name)
             return
 
-        command = [BIN_7ZIP, 'rn', self._current_archive, self._current_path + old_name, self._current_path + new_name]
+        p = self._current_path + os.sep if self._current_path else ''
+        command = [BIN_7ZIP, 'rn', self._current_archive, p + old_name, p + new_name]
+
         self._run(command, cwd=TMP_DIR)
         self._load_path()
 
@@ -1357,7 +1376,8 @@ class Main(QMainWindow):
         folder_name, ok = QInputDialog.getText(self, 'New Folder', 'Enter Folder Name:')
         if not folder_name:
             return
-        rel_dir = self._current_path + folder_name
+        rel_dir = self._current_path + os.sep + folder_name
+
         abs_dir = os.path.join(TMP_DIR, rel_dir)
         os.makedirs(abs_dir, exist_ok=True)
 

@@ -58,19 +58,12 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLineEdit" name="lineEditPath">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBox">
+       <widget class="QComboBox" name="comboBoxPath">
         <property name="styleSheet">
          <string notr="true"/>
         </property>
         <property name="editable">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -109,7 +102,7 @@
        <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
       <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectItems</enum>
+       <enum>QAbstractItemView::SelectRows</enum>
       </property>
       <property name="showGrid">
        <bool>true</bool>
@@ -267,7 +260,8 @@
    </property>
    <property name="icon">
     <iconset resource="main.qrc">
-     <normaloff>:/main/icons/add.png</normaloff>:/main/icons/add.png</iconset>
+     <normaloff>:/main/icons/add.png</normaloff>
+     <disabledoff>:/main/icons/add_gs.png</disabledoff>:/main/icons/add.png</iconset>
    </property>
    <property name="text">
     <string>Add</string>
@@ -279,7 +273,8 @@
    </property>
    <property name="icon">
     <iconset resource="main.qrc">
-     <normaloff>:/main/icons/extract.png</normaloff>:/main/icons/extract.png</iconset>
+     <normaloff>:/main/icons/extract.png</normaloff>
+     <disabledoff>:/main/icons/extract_gs.png</disabledoff>:/main/icons/extract.png</iconset>
    </property>
    <property name="text">
     <string>Extract</string>
@@ -291,7 +286,8 @@
    </property>
    <property name="icon">
     <iconset resource="main.qrc">
-     <normaloff>:/main/icons/test.png</normaloff>:/main/icons/test.png</iconset>
+     <normaloff>:/main/icons/test.png</normaloff>
+     <disabledoff>:/main/icons/test_gs.png</disabledoff>:/main/icons/test.png</iconset>
    </property>
    <property name="text">
     <string>Test</string>
@@ -303,7 +299,8 @@
    </property>
    <property name="icon">
     <iconset resource="main.qrc">
-     <normaloff>:/main/icons/move.png</normaloff>:/main/icons/move.png</iconset>
+     <normaloff>:/main/icons/move.png</normaloff>
+     <disabledoff>:/main/icons/move_gs.png</disabledoff>:/main/icons/move.png</iconset>
    </property>
    <property name="text">
     <string>Move</string>
@@ -315,7 +312,8 @@
    </property>
    <property name="icon">
     <iconset resource="main.qrc">
-     <normaloff>:/main/icons/delete.png</normaloff>:/main/icons/delete.png</iconset>
+     <normaloff>:/main/icons/delete.png</normaloff>
+     <disabledoff>:/main/icons/delete_gs.png</disabledoff>:/main/icons/delete.png</iconset>
    </property>
    <property name="text">
     <string>Delete</string>
