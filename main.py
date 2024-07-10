@@ -5,9 +5,11 @@ import sys
 import traceback
 import uuid
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtCore import (Qt, pyqtSignal, QMimeData, QVariant, QSettings, QResource,
+        QFileSystemWatcher, QFileInfo)
+from PyQt5.QtGui import QCursor
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox, QAction,
+        QInputDialog, QTableWidgetItem, QLabel, QMenu, QFileIconProvider)
 from PyQt5 import uic
 
 APP_NAME = 'Archivist'  # Archivist QPy7zipExplorer
@@ -54,12 +56,6 @@ if os.path.isdir(TMP_DIR):
     shutil.rmtree(TMP_DIR, ignore_errors=True)
 os.makedirs(TMP_DIR, exist_ok=True)
 
-#SUPPORTED_FORMATS = (
-#        '7z', 'APM', 'AR', 'ARJ', 'BZIP2', 'CAB', 'CHM', 'COMPOUND', 'CPIO', 'CramFS', 'DMG', 'Ext', 'FAT',
-#        'GZIP', 'HFS', 'HXS', 'iHEX', 'ISO', 'LZH', 'LZMA', 'MBR', 'MBR', 'MsLZ', 'Mub', 'NSIS', 'NTFS',
-#        'PPMD', 'QCOW2', 'RAR', 'RPM', 'SquashFS', 'TAR', 'UDF', 'UEFIc', 'UEFIs', 'VDI', 'VHD', 'VMDK',
-#        'WIM', 'XAR', 'XZ', 'Z', 'ZIP')
-
 SUPPORTED_EXTENSIONS = (
         '7z', 'a', 'apk', 'apm', 'ar', 'arj', 'bz2', 'bzip2', 'cab', 'chi', 'chm', 'chq', 'chw', 'cdr', 'cpio', 'cramfs',
         'deb', 'dmg', 'doc', 'docx', 'epub', 'esd', 'exe', 'ext', 'ext2', 'ext3', 'ext4', 'fat', 'gz', 'gzip',
@@ -71,13 +67,8 @@ SUPPORTED_EXTENSIONS = (
 
 FILTER_SUPPORTED = 'Supported Files (*.' + ' *.'.join(SUPPORTED_EXTENSIONS) + ');;All Files (*)'
 
-#EDITABLE_EXTENSIONS = ('7z', 'bz2', 'bzip2', 'tbz2', 'tbz', 'gz', 'gzip', 'tgz', 'tar', 'xz',
-#        'txz', 'zip', 'zipx', 'jar', 'xpi', 'odt', 'ods', 'docx', 'xlsx', 'epub')
-
 EDITABLE_EXTENSIONS = ('7z', 'exe', 'tar', 'tbz2', 'tbz', 'tgz',
         'txz', 'zip', 'zipx', 'jar', 'xpi', 'odt', 'ods', 'docx', 'xlsx', 'epub')
-
-# tar.bz2 tar.gz tar.lzma tar.xz
 
 #7z 	X 	7z
 #BZIP2 	X 	bz2 bzip2 tbz2 tbz
@@ -89,8 +80,6 @@ EDITABLE_EXTENSIONS = ('7z', 'exe', 'tar', 'tbz2', 'tbz', 'tgz',
 
 CREATABLE_EXTENSIONS = ['7z']  + (['exe'] if IS_WIN else []) + ['zip', 'tar', 'tgz', 'tbz', 'txz']  # single file only: gzip bzip2 xz
 
-#FILTER_CREATABLE = ';;'.join([f.upper() + ' archive (*.' + f + ')' for f in CREATABLE_EXTENSIONS])
-
 FILTER_CREATABLE = ';;'.join([
     '7-Zip archive (*.7z)'] + (['7-Zip SFX (.exe)'] if IS_WIN else []) + [
     'ZIP archive (*.zip)',
@@ -100,15 +89,13 @@ FILTER_CREATABLE = ';;'.join([
     'TXZ archive (*.txz *.tar.xz)'
 ])
 
-#if IS_WIN:
-
 FILTER_CCOMPRESS_SINGLE = ';;'.join((
     'GZIP file (*.gz)',
     'BZIP2 file (*.bz2)',
     'XZ file (*.xz)'
 ))
 
-COMPRESSION_ONLY_EXTENSIONS = ('bz2', 'bzip2', 'gz', 'gzip', 'xz',    'z', 'lzma')
+COMPRESSION_ONLY_EXTENSIONS = ('bz2', 'bzip2', 'gz', 'gzip', 'xz', 'z', 'lzma')
 # BUT: tar.lzma (tlz)
 
 COL_NAME = 0
@@ -299,7 +286,7 @@ class Main(QMainWindow):
         self.tableWidget.setColumnWidth(1, 80)
         self.tableWidget.setColumnWidth(2, 160)
         self.tableWidget.setColumnWidth(3, 60)
-        self.tableWidget.setColumnWidth(0, self.width() - 300 - 50)
+        self.tableWidget.setColumnWidth(0, self.width() - 350)
 
         self.tableWidget.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.tableWidget.horizontalHeaderItem(1).setTextAlignment(Qt.AlignRight)
@@ -332,10 +319,6 @@ class Main(QMainWindow):
         self.action_open = QAction('Open', self._context_menu)
         self.action_open.triggered.connect(self.slot_open)
         self._context_menu.addAction(self.action_open)
-
-#        self.action_view = QAction('View', self._context_menu)
-#        self.action_view.triggered.connect(self.slot_view)
-#        self._context_menu.addAction(self.action_view)
 
         self.action_edit = QAction('Edit', self._context_menu)
         self.action_edit.triggered.connect(self.slot_edit)
@@ -542,7 +525,7 @@ class Main(QMainWindow):
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
         elif is_pkg:
-            # list "Payload~" CPIO previously extracted to tmp dir insteas
+            # list "Payload~" CPIO previously extracted to tmp dir instead
             command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', self._tmp_cpio, f"{path}*"]
         else:
             command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
@@ -550,7 +533,6 @@ class Main(QMainWindow):
         output = self._run(command, return_stdout=True)
         if output == False:
             return
-#        print(output)
         output = output[:-len(EOL)]
         if not output:
             return []
@@ -644,7 +626,6 @@ class Main(QMainWindow):
 #        if self._current_ext == '7z':
 #            rows = self._list_folders_explicit(path)
 #        else:
-
         rows = self._list_folders_implicit(archive, path, is_compressed_tar, is_pkg)  # self._current_ext == 'tar' or self._is_compressed_tar
 
         if rows is None:
@@ -653,13 +634,9 @@ class Main(QMainWindow):
         if self.tableWidget.receivers(self.tableWidget.cellChanged):
             self.tableWidget.cellChanged.disconnect(self.slot_item_edited)
 
-        #self.tableWidget.clearContents()
         self.tableWidget.setRowCount(0)
 
         self.tableWidget.setSortingEnabled(False)
-
-#        rows = sorted(rows, key = lambda i: i[COL_NAME].lower())
-
 
         txt = os.path.join(os.path.basename(archive), path) if path else os.path.basename(archive) + os.sep
         idx = self.comboBoxPath.findText(txt)
@@ -668,7 +645,6 @@ class Main(QMainWindow):
         else:
             self.comboBoxPath.addItem(txt)
             self.comboBoxPath.setCurrentIndex(self.comboBoxPath.count() - 1)
-
 
         if path != '':
             self.tableWidget.setRowCount(len(rows) + 1)
@@ -752,7 +728,6 @@ class Main(QMainWindow):
             i += 1
 
         self.tableWidget.setSortingEnabled(True)
-#        self.tableWidget.sortItems(0, Qt.AscendingOrder)
 
         if is_editable:
             self.tableWidget.cellChanged.connect(self.slot_item_edited)
@@ -780,7 +755,6 @@ class Main(QMainWindow):
     #
     ########################################
     def _save_path(self, archive_path, local_dir, is_dir):
-#        print('_save_path', archive_path, local_dir, is_dir)
         c = 'x' if is_dir else 'e'
         if self._is_compressed_tar:
             if self._tmp_tar:
@@ -822,7 +796,6 @@ class Main(QMainWindow):
                     QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
             if res != QMessageBox.Ok:
                 return
-#        print([item.data(Qt.UserRole) for item in selected_items])
         command = [BIN_7ZIP, 'd', self._current_archive] + [item.data(Qt.UserRole) for item in selected_items]
         self._run(command)
         self._load_path()
@@ -927,18 +900,6 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
-#    def _view_item(self, item):
-#        archive_path = item.data(Qt.UserRole)
-#        self._save_path(archive_path, TMP_DIR, False)
-#        fn = os.path.join(TMP_DIR, os.path.basename(archive_path))
-#        if IS_WIN:
-#            os.startfile('notepad.exe', 'open', fn)
-#        else:
-#            subprocess.call(('open', fn))  # TODO
-
-    ########################################
-    #
-    ########################################
     def _edit_item(self, item):
         archive_path = item.data(Qt.UserRole)  # path inside archive
 
@@ -1037,7 +998,6 @@ class Main(QMainWindow):
     #
     ########################################
     def dragEnterEvent(self, e):
-        #print('MAIN dragEnterEvent', e.source(), int(e.dropAction()))
         # source None means drop from outside (e.g. Explorer)
         if e.source() is None and e.mimeData().hasUrls():
             if os.path.splitext(e.mimeData().urls()[0].toLocalFile())[1][1:] in SUPPORTED_EXTENSIONS:
@@ -1047,12 +1007,6 @@ class Main(QMainWindow):
     #
     ########################################
     def dropEvent(self, e):
-#        print('MAIN dropEvent')
-#        for u in e.mimeData().urls():
-#            fn = os.path.normpath(u.toLocalFile())
-#            if os.path.splitext(fn)[1][1:] in SUPPORTED_EXTENSIONS:
-#                self._load_archive(fn)
-#                break
         self._load_archive(os.path.normpath(e.mimeData().urls()[0].toLocalFile()))
 
 	########################################
@@ -1063,7 +1017,6 @@ class Main(QMainWindow):
         watched_files = self._watcher.files()
         if watched_files:
             self._watcher.removePaths(watched_files)
-#            QTimer.singleShot(100, _cleanup)  # fails if called directly
         shutil.rmtree(TMP_DIR, ignore_errors=True)
 
     def __SLOTS(): pass
@@ -1109,8 +1062,6 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_item_edited(self, row, col):
-#        if col != 0:
-#            return
         item = self.tableWidget.item(row, col)
         old_name = item.data(Qt.UserRole).split(os.sep).pop()
         new_name = item.text()
@@ -1120,10 +1071,8 @@ class Main(QMainWindow):
             # revert
             item.setText(old_name)
             return
-
         p = self._current_path + os.sep if self._current_path else ''
         command = [BIN_7ZIP, 'rn', self._current_archive, p + old_name, p + new_name]
-
         self._run(command, cwd=TMP_DIR)
         self._load_path()
 
@@ -1172,14 +1121,7 @@ class Main(QMainWindow):
         mime.setData('application/x-qabstractitemmodeldatalist',
                      self.tableWidget.mimeData(self.tableWidget.selectedItems()).data('application/x-qabstractitemmodeldatalist'))
         drag.setMimeData(mime)
-
         drag.exec(Qt.MoveAction)  # segmentation fault
-
-        # cleanup
-#         time.sleep(2)
-        # self._clear_tmp_dir()
-
-#         super(QTableWidget, self.tableWidget).startDrag(drop_actions)
 
     ########################################
     #
@@ -1249,7 +1191,6 @@ class Main(QMainWindow):
         {APP_NAME} on <a href='https://github.com/59de44955ebd/{APP_NAME}'>GitHub</a>
         '''
         QMessageBox.about(self, 'About', msg)
-        #<br>License for app\'s Python code: MIT
 
     ########################################
     #
@@ -1264,19 +1205,13 @@ class Main(QMainWindow):
         item = self.tableWidget.currentItem()
         is_selected = item is not None and self.tableWidget.item(item.row(), 0).text() != '..'
         is_folder = item is not None and self.tableWidget.item(item.row(), 0).data(Qt.UserRole + 1)
-
         self.action_extract.setEnabled(is_selected)
-
         self.action_open.setEnabled(is_selected)
-#        self.action_view.setEnabled(is_selected and not is_folder)
-
         self.action_edit.setEnabled(is_selected and self._is_editable and not is_folder)
         self.action_rename.setEnabled(is_selected and self._is_editable)
         self.action_move.setEnabled(is_selected and self._is_editable)
         self.action_delete.setEnabled(is_selected and self._is_editable)
-
         self.action_new_folder.setEnabled(self._is_editable)
-
         self._context_menu.exec(QCursor.pos())
 
     ########################################
@@ -1305,13 +1240,6 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
-#    def slot_view(self):
-#        item = self.tableWidget.currentItem()
-#        self._view_item(self.tableWidget.item(item.row(), 0))
-
-    ########################################
-    #
-    ########################################
     def slot_edit(self):
         item = self.tableWidget.currentItem()
         self._edit_item(self.tableWidget.item(item.row(), 0))
@@ -1320,16 +1248,13 @@ class Main(QMainWindow):
     #
     ########################################
     def slot_edited_file_changed(self, filename):
-
         if not os.path.isfile(filename):
             print('file deleted', filename)
             self._watcher.removePath(filename)
             del self._edit_dict[filename]
             return
-
         command = [BIN_7ZIP, 'a', '-up1q0r2y2', self._current_archive, self._edit_dict[filename]]
         self._run(command, cwd=self._watch_dir)
-
         self._load_path()
 
     ########################################
@@ -1358,12 +1283,10 @@ class Main(QMainWindow):
         item = self.tableWidget.item(item.row(), 0)
         if item.is_frozen:
             return
-
         old_name = item.data(Qt.UserRole)
         new_name, ok = QInputDialog.getText(self, 'New Name', 'Enter Name:', QLineEdit.Normal, old_name)
         if not new_name or new_name == old_name:
             return
-
         command = [BIN_7ZIP, 'rn', self._current_archive, old_name, new_name]
         self._run(command, cwd=TMP_DIR)
         self._load_path()
