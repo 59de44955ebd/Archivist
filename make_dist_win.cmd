@@ -102,14 +102,6 @@ del "dist\%APP_NAME%\_internal\PyQt5\Qt5\bin\Qt5Quick.dll"
 del "dist\%APP_NAME%\_internal\PyQt5\Qt5\bin\Qt5Svg.dll"
 del "dist\%APP_NAME%\_internal\PyQt5\Qt5\bin\Qt5WebSockets.dll"
 
-::MSVCP140.dll
-::MSVCP140_1.dll
-::Qt5Core.dll
-::Qt5Gui.dll
-::Qt5Widgets.dll
-::VCRUNTIME140.dll
-::VCRUNTIME140_1.dll
-
 rmdir /s /q "dist\%APP_NAME%\_internal\PyQt5\uic"
 rmdir /s /q "dist\%APP_NAME%\_internal\PyQt5\Qt5\translations"
 
@@ -122,12 +114,8 @@ del "dist\%APP_NAME%\_internal\PyQt5\Qt5\plugins\platforms\qminimal.dll"
 del "dist\%APP_NAME%\_internal\PyQt5\Qt5\plugins\platforms\qoffscreen.dll"
 del "dist\%APP_NAME%\_internal\PyQt5\Qt5\plugins\platforms\qwebgl.dll"
 
-
-::del "dist\%APP_NAME%\_internal\_ssl.pyd"
-::del "dist\%APP_NAME%\_internal\libssl-3.dll"
-
-::call :create_7z
-::call :create_installer
+call :create_7z
+call :create_installer
 
 :done
 echo.
