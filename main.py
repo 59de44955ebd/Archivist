@@ -240,6 +240,7 @@ class Main(QMainWindow):
         self._is_compressed_tar = False
         self._is_pkg = False
         self._tmp_tar = None
+        self._tmp_cpio = None
 
         QResource.registerResource(os.path.join(RES_DIR, 'main.rcc'))
         uic.loadUi(os.path.join(RES_DIR, 'main.ui'), self)
@@ -247,7 +248,7 @@ class Main(QMainWindow):
         if IS_MAC and IS_FROZEN:
             app.fileOpened.connect(self._load_archive)
 
-        # menu
+        # menu actions
         self.actionNewArchive.triggered.connect(self.slot_create_archive)
         self.actionCompressSingleFile.triggered.connect(self.slot_compress_single)
         self.actionOpenArchive.triggered.connect(self.slot_load_archive)
@@ -270,7 +271,7 @@ class Main(QMainWindow):
 
         self.actionAbout.triggered.connect(self.slot_about)
 
-        # toolbar
+        # toolbar actions
         self.actionCreate.triggered.connect(self.slot_create_archive)
         self.actionAdd.triggered.connect(self.slot_add)
         self.actionExtract.triggered.connect(self.slot_extract)
@@ -279,10 +280,17 @@ class Main(QMainWindow):
         self.actionDelete.triggered.connect(self.slot_delete)
         self.actionInfo.triggered.connect(self.slot_about)
 
+        # statusbar
         self._status_label = QLabel(self)
         self.statusbar.addPermanentWidget(self._status_label)
 
+        # addressbar
+        self.comboBoxPath.activated.connect(lambda idx:
+                self._load_path(path=os.sep.join(self.comboBoxPath.itemText(idx)[:-1].split(os.sep)[1:])))
+
+        # filesystem table
         if IS_MAC:
+            # make look more similar to Finder
             self.tableWidget.setStyleSheet('font-size:12px;')
             verticalHeader = self.tableWidget.verticalHeader()
             verticalHeader.setSectionResizeMode(QHeaderView.Fixed)
@@ -302,9 +310,17 @@ class Main(QMainWindow):
 
         self.tableWidget.customContextMenuRequested.connect(self.slot_context_menu_requested)
 
-        self.comboBoxPath.activated.connect(lambda idx:
-                self._load_path(path=os.sep.join(self.comboBoxPath.itemText(idx)[:-1].split(os.sep)[1:])))
+        self.tableWidget.dragStarted.connect(self.slot_table_drag_started)
+        self.tableWidget.itemsDropped.connect(self.slot_table_items_dropped)
+        self.tableWidget.deletePressed.connect(self.slot_delete)
 
+        def _sort_changed(idx, order):
+            global sort_descending
+            sort_descending = order == Qt.DescendingOrder
+            self.tableWidget.sortItems(idx, order)
+        self.tableWidget.horizontalHeader().sortIndicatorChanged.connect(_sort_changed)
+
+        # context menu
         self._context_menu = QMenu(self)
 
         self.action_extract = QAction('Extract', self._context_menu)
@@ -345,16 +361,7 @@ class Main(QMainWindow):
         self.action_new_folder.triggered.connect(self.slot_new_folder)
         self._context_menu.addAction(self.action_new_folder)
 
-        self.tableWidget.dragStarted.connect(self.slot_table_drag_started)
-        self.tableWidget.itemsDropped.connect(self.slot_table_items_dropped)
-        self.tableWidget.deletePressed.connect(self.slot_delete)
-
-        def _sort_changed(idx, order):
-            global sort_descending
-            sort_descending = order == Qt.DescendingOrder
-            self.tableWidget.sortItems(idx, order)
-        self.tableWidget.horizontalHeader().sortIndicatorChanged.connect(_sort_changed)
-
+        # other stuff
         self._icon_provider = QFileIconProvider()
         self._icon_folder = self._icon_provider.icon(QFileIconProvider.Folder)
         self._icon_file = self._icon_provider.icon(QFileIconProvider.File)
@@ -399,6 +406,8 @@ class Main(QMainWindow):
         if is_pkg:
             command = [BIN_7ZIP, 'e', '-aoa', '-o' + TMP_DIR, archive, 'Payload~']
             self._run(command, return_stdout=True)
+            self._tmp_cpio = os.path.join(TMP_DIR, 'payload_' + uuid.uuid4().hex)
+            os.rename(os.path.join(TMP_DIR, 'Payload~'), self._tmp_cpio)
 
         if ext == 'exe':
             # check if 7z sfx (7z can't edit/save ZIP sfx)
@@ -501,6 +510,10 @@ class Main(QMainWindow):
             os.remove(self._tmp_tar)
             self._tmp_tar = None
 
+        if self._tmp_cpio:
+            os.remove(self._tmp_cpio)
+            self._tmp_cpio = None
+
         if self.tableWidget.receivers(self.tableWidget.cellChanged):
             self.tableWidget.cellChanged.disconnect(self.slot_item_edited)
 
@@ -528,17 +541,9 @@ class Main(QMainWindow):
                 command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-ttar', '-ba', '-sccUTF-8', f"{path}*"]
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
-
         elif is_pkg:
-
-            # NOT IMPLEMENTED
-#            if IS_WIN:
-#                command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-tcpio', '-ba', '-sccUTF-8', f"{path}*"]
-#            else:
-#                command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -tcpio -ba -sccUTF-8 '{path}*'"
-
-            command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', os.path.join(TMP_DIR, 'Payload~'), f"{path}*"]
-
+            # list "Payload~" CPIO previously extracted to tmp dir insteas
+            command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', self._tmp_cpio, f"{path}*"]
         else:
             command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
 
@@ -1095,8 +1100,10 @@ class Main(QMainWindow):
     ########################################
     def slot_test(self):
         command = [BIN_7ZIP, 't', self._current_archive]
-        output = self._run(command, return_stdout=True)
-        QMessageBox.information(self, APP_NAME, output)
+        output = self._run(command, return_stdout=True).strip()
+        dialog = QMessageBox(QMessageBox.Information, APP_NAME, f'<b>{self._current_archive}</b>', parent=self)
+        dialog.setInformativeText(output)
+        dialog.exec()
 
     ########################################
     #
