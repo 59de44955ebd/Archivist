@@ -6,10 +6,10 @@ import traceback
 import uuid
 
 from PyQt5.QtCore import (Qt, pyqtSignal, QMimeData, QVariant, QSettings, QResource,
-        QFileSystemWatcher, QFileInfo)
+        QFileSystemWatcher, QFileInfo, QEvent)
 from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox, QAction,
-        QInputDialog, QTableWidgetItem, QLabel, QMenu, QFileIconProvider)
+        QInputDialog, QTableWidgetItem, QLabel, QMenu, QFileIconProvider, QHeaderView)
 from PyQt5 import uic
 
 APP_NAME = 'Archivist'  # Archivist QPy7zipExplorer
