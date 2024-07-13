@@ -50,10 +50,10 @@ app = BUNDLE(
     bundle_identifier=None,
     info_plist={
         'CFBundleShortVersionString': '0.1.0',
-        'Associations': '7z zip rar dmg cdr iso pkg cpio exe',
+        'Associations': '7z zip rar pkg cpio exe dmg img cdr iso dsk dd vmdk vdi vhd vhdx fat ntfs hfsx apfs',
         'CFBundleDocumentTypes': [
             {
-                'CFBundleTypeExtensions': ['7z', 'zip', 'rar', 'dmg', 'cdr', 'iso', 'pkg', 'cpio', 'exe'],
+                'CFBundleTypeExtensions': ['7z', 'zip', 'rar', 'pkg', 'cpio', 'exe', 'dmg', 'img', 'cdr', 'iso', 'dsk', 'dd', 'vmdk', 'vdi', 'vhd', 'vhdx', 'fat', 'ntfs', 'hfsx', 'apfs'],
                 'CFBundleTypeRole': 'Editor'
             }
         ]

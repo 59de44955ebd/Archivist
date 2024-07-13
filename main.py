@@ -6,8 +6,8 @@ import traceback
 import uuid
 
 from PyQt5.QtCore import (Qt, pyqtSignal, QMimeData, QVariant, QSettings, QResource,
-        QFileSystemWatcher, QFileInfo, QEvent)
-from PyQt5.QtGui import QCursor
+        QFileSystemWatcher, QFileInfo, QEvent, QUrl)
+from PyQt5.QtGui import QCursor, QDrag
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox, QAction,
         QInputDialog, QTableWidgetItem, QLabel, QMenu, QFileIconProvider, QHeaderView)
 from PyQt5 import uic
@@ -62,7 +62,7 @@ SUPPORTED_EXTENSIONS = (
         'hfs', 'hfsx', 'hxi', 'hxq', 'hxr', 'hxs', 'hxw', 'ihex', 'img', 'iso',
         'jar', 'lha', 'lib', 'lit', 'lzh', 'lzma', 'mbr', 'msi', 'mslz', 'msp', 'mub', 'nsis',
         'ntfs', 'ods', 'odt', 'pkg', 'ppmd', 'ppt', 'qcow', 'qcow2', 'qcow2c', 'r00', 'rar', 'rpm', 'scap',
-        'squashfs', 'swm', 'tar', 'taz', 'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'udf', 'uefif', 'vdi', 'vhd', 'vmdk',
+        'squashfs', 'swm', 'tar', 'taz', 'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'udf', 'uefif', 'vdi', 'vhd', 'vhdx', 'vmdk',
         'whl', 'wim', 'xar', 'xls', 'xlsx', 'xpi', 'xz', 'z', 'zip', 'zipx')
 
 FILTER_SUPPORTED = 'Supported Files (*.' + ' *.'.join(SUPPORTED_EXTENSIONS) + ');;All Files (*)'
