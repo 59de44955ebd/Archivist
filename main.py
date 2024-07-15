@@ -225,7 +225,6 @@ class Main(QMainWindow):
         self._current_path = ''
         self._is_editable = False
         self._is_compressed_tar = False
-        self._is_pkg = False
         self._tmp_tar = None
         self._tmp_cpio = None
 
@@ -362,18 +361,28 @@ class Main(QMainWindow):
             self._load_archive(sys.argv[1])
 
     ########################################
+    #
+    ########################################
+    def _is_supported(self, filename):
+        if os.path.basename(filename) in ('Payload', 'Payload~'):
+            return True
+        ext = os.path.splitext(filename)[1].lower()[1:]
+        return ext in SUPPORTED_EXTENSIONS
+
+    ########################################
     # TODO: check if readonly!
     ########################################
-    def _load_archive(self, fn):
-        fn = os.path.normpath(fn)
-        bn, ext = os.path.splitext(fn)
-        ext = ext[1:].lower()
-
-        if ext not in SUPPORTED_EXTENSIONS:
+    def _load_archive(self, filename):
+        if not self._is_supported(filename):
             # show message
             return
 
-        is_compressed_tar = bn.lower().endswith('.tar')
+        filename = os.path.normpath(filename)
+        basename, ext = os.path.splitext(filename)
+        ext = ext[1:].lower()
+
+        is_compressed_tar = basename.lower().endswith('.tar')
+
 #        if ext in COMPRESSION_ONLY_EXTENSIONS and not is_compressed_tar:
 #            # show message
 #            return
@@ -381,16 +390,8 @@ class Main(QMainWindow):
         if self._current_archive:
             self._unload_archive()
 
-        archive = os.path.realpath(fn)
+        archive = os.path.realpath(filename)
         is_compressed_tar = is_compressed_tar or ext in ('tbz', 'tgz', 'tlz', 'txz')
-
-        is_pkg = ext == 'pkg'
-
-        if is_pkg:
-            command = [BIN_7ZIP, 'e', '-aoa', '-o' + TMP_DIR, archive, 'Payload~']
-            self._run(command, return_stdout=True)
-            self._tmp_cpio = os.path.join(TMP_DIR, 'payload_' + uuid.uuid4().hex)
-            os.rename(os.path.join(TMP_DIR, 'Payload~'), self._tmp_cpio)
 
         if ext == 'exe':
             # check if 7z sfx (7z can't edit/save ZIP sfx)
@@ -402,7 +403,7 @@ class Main(QMainWindow):
             is_editable = (is_compressed_tar and ext in ('bz2', 'gz', 'xz')) or ext in EDITABLE_EXTENSIONS
 
         self.comboBoxPath.clear()
-        ok = self._load_path(archive, '', is_editable, is_compressed_tar, is_pkg)
+        ok = self._load_path(archive, '', is_editable, is_compressed_tar)
 
         self.tableWidget.setEnabled(ok)
 
@@ -412,11 +413,10 @@ class Main(QMainWindow):
             self._current_path = ''
             self._is_editable = is_editable
             self._is_compressed_tar = is_compressed_tar
-            self._is_pkg = is_pkg
 
             self.statusbar.showMessage('Archive successfully loaded.')
             self._status_label.setText(f'Archive editable: {"yes" if self._is_editable else "no"}')
-            self.setWindowTitle(os.path.basename(fn) + ' - ' + APP_NAME)
+            self.setWindowTitle(os.path.basename(filename) + ' - ' + APP_NAME)
 
         else:
             self.statusbar.showMessage('Error: failed to open archive.')
@@ -511,22 +511,18 @@ class Main(QMainWindow):
         self._current_path = ''
         self._is_editable = False
         self._is_compressed_tar = False
-        self._is_pkg = False
         self._tmp_tar = None
 
     ########################################
     # for archives that don't store directories explicitely
     # returns list or None
     ########################################
-    def _list_folders_implicit(self, archive, path, is_compressed_tar, is_pkg):
+    def _list_folders_implicit(self, archive, path, is_compressed_tar):
         if is_compressed_tar:
             if IS_WIN:
                 command = [BIN_7ZIP, 'x', archive, '-so', '|', BIN_7ZIP, 'l', '-si', '-ttar', '-ba', '-sccUTF-8', f"{path}*"]
             else:
                 command = f"'{BIN_7ZIP}' x '{archive}' -so | '{BIN_7ZIP}' l -si -ttar -ba -sccUTF-8 '{path}*'"
-        elif is_pkg:
-            # list "Payload~" CPIO previously extracted to tmp dir instead
-            command = [BIN_7ZIP, 'l', '-tcpio', '-ba', '-sccUTF-8', self._tmp_cpio, f"{path}*"]
         else:
             command = [BIN_7ZIP, 'l', '-ba', '-sccUTF-8', archive, f"{path}*"]
 
@@ -605,20 +601,19 @@ class Main(QMainWindow):
     ########################################
     #
     ########################################
-    def _load_path(self, archive=None, path=None, is_editable=None, is_compressed_tar=None, is_pkg=None):
+    def _load_path(self, archive=None, path=None, is_editable=None, is_compressed_tar=None):
 
         if archive is None:
             archive = self._current_archive
+
         if path is None:
             path = self._current_path
+
         if is_editable is None:
             is_editable = self._is_editable
 
         if is_compressed_tar is None:
             is_compressed_tar = self._is_compressed_tar
-
-        if is_pkg is None:
-            is_pkg = self._is_pkg
 
         if path != '' and not path.endswith(os.sep):
             path += os.sep
@@ -626,7 +621,7 @@ class Main(QMainWindow):
 #        if self._current_ext == '7z':
 #            rows = self._list_folders_explicit(path)
 #        else:
-        rows = self._list_folders_implicit(archive, path, is_compressed_tar, is_pkg)  # self._current_ext == 'tar' or self._is_compressed_tar
+        rows = self._list_folders_implicit(archive, path, is_compressed_tar)  # self._current_ext == 'tar' or self._is_compressed_tar
 
         if rows is None:
             return False
@@ -765,9 +760,7 @@ class Main(QMainWindow):
                 else:
                     command = f"'{BIN_7ZIP}' x '{self._current_archive}' -so | '{BIN_7ZIP}' {c} -si -ttar -aoa '{archive_path}'"
             self._run(command, cwd=local_dir)
-        elif self._is_pkg:
-            command = [BIN_7ZIP, c, '-aoa', '-tcpio', os.path.join(TMP_DIR, 'Payload~'), archive_path]
-            self._run(command, cwd=local_dir)
+
         else:
             command = [BIN_7ZIP, c, '-aoa', self._current_archive, archive_path]
             self._run(command, cwd=local_dir)
@@ -891,11 +884,15 @@ class Main(QMainWindow):
         else:
             archive_path = item.data(Qt.UserRole)
             self._save_path(archive_path, TMP_DIR, False)
-            fn = os.path.join(TMP_DIR, os.path.basename(archive_path))
-            if IS_WIN:
-                os.startfile(fn, 'open')
+            filename = os.path.join(TMP_DIR, os.path.basename(archive_path))
+
+            if self._is_supported(archive_path):
+                self._load_archive(filename)
             else:
-                subprocess.call(('open', fn))
+                if IS_WIN:
+                    os.startfile(filename, 'open')
+                else:
+                    subprocess.call(('open', filename))
 
     ########################################
     #
